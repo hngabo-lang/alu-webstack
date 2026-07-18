@@ -1,0 +1,34 @@
+#!/usr/bin/env bash
+# shellcheck disable=SC2086
+# Displays the DNS record type and destination for one or more subdomains
+# of a given domain, using dig and awk.
+#
+# Usage:
+#   0-world_wide_web domain
+#   0-world_wide_web domain subdomain
+
+print_subdomain_info() {
+    domain=$1
+    sub=$2
+
+    # Intentionally unquoted below (see SC2086 disable above): building the
+    # hostname from two simple, space-free values.
+    info=$(dig ${sub}.${domain} | awk '/^;; ANSWER SECTION:/ { getline; print $4, $5 }')
+
+    record_type=$(echo "$info" | awk '{print $1}')
+    destination=$(echo "$info" | awk '{print $2}')
+
+    echo "The subdomain ${sub} is a ${record_type} record and points to ${destination}"
+}
+
+domain=$1
+subdomain=$2
+
+if [ -n "$subdomain" ]; then
+    print_subdomain_info "$domain" "$subdomain"
+else
+    for sub in www lb-01 web-01 web-02; do
+        print_subdomain_info "$domain" "$sub"
+    done
+fi
+
